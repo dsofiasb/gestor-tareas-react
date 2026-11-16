@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestor de Tareas</title>
+  <!-- Importamos React -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Importamos Babel para que lea nuestro código -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    body { font-family: sans-serif; background-color: #202632; color: #cee3e9; margin: 0; padding: 20px; }
+    .app-container { max-width: 600px; margin: 0 auto; background-color: #313a48; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    h2, h3 { color: #52ffa8; }
+    input, select, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: none; box-sizing: border-box; }
+    button { background-color: #52ffa8; color: #202632; font-weight: bold; cursor: pointer; font-size: 16px; }
+    .task-card { background-color: #202632; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+    .btn-small { width: auto; padding: 8px 15px; margin-right: 5px; font-size: 14px; }
+    .btn-delete { background-color: #ff5a5f; color: white; }
+    .completed-text { text-decoration: line-through; color: #7a8a9e; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      // Estados para guardar información
+      const [user, setUser] = useState(localStorage.getItem('usuario_actual') || '');
+      const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('tareas_react')) || []);
+      const [title, setTitle] = useState('');
+      const [search, setSearch] = useState('');
+
+      // Guardar en la memoria del navegador cada vez que cambien las tareas
+      useEffect(() => { localStorage.setItem('tareas_react', JSON.stringify(tasks)); }, [tasks]);
+      useEffect(() => { localStorage.setItem('usuario_actual', user); }, [user]);
+
+      // Pantalla de Login (Si no hay usuario)
+      if (!user) {
+        return (
+          <div className="app-container">
+            <h2>🔑 Registro / Iniciar Sesión</h2>
+            <p>Ingresa tu nombre para gestionar tus tareas:</p>
+            <input type="text" id="username" placeholder="Ej. Sofia Sandoval" />
+            <button onClick={() => setUser(document.getElementById('username').value)}>Acceder</button>
+          </div>
+        );
+      }
+
+      // Funciones de la aplicación
+      const addTask = () => {
+        if (title.trim() !== '') {
+          setTasks([...tasks, { id: Date.now(), title, status: 'Pendiente' }]);
+          setTitle('');
+        }
+      };
+
+      const toggleStatus = (id) => {
+        setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'Completada' ? 'Pendiente' : 'Completada' } : t));
+      };
+
+      const deleteTask = (id) => {
+        setTasks(tasks.filter(t => t.id !== id));
+      };
+
+      // Filtro de búsqueda
+      const filteredTasks = tasks.filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
+
+      // Pantalla principal (Gestor)
+      return (
+        <div className="app-container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3>👋 Hola, {user}</h3>
+            <button className="btn-small btn-delete" onClick={() => setUser('')}>Cerrar Sesión</button>
+          </div>
+          
+          <hr style={{ borderColor: '#202632', margin: '20px 0' }}/>
+
+          <h4>➕ Crear Nueva Tarea</h4>
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="¿Qué necesitas hacer hoy?" />
+          <button onClick={addTask}>Guardar Tarea</button>
+
+          <h4>🔍 Buscar Tareas</h4>
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Escribe para filtrar..." />
+
+          <h4>📋 Lista de Tareas ({filteredTasks.length})</h4>
+          {filteredTasks.map(t => (
+            <div key={t.id} className="task-card">
+              <h3 className={t.status === 'Completada' ? 'completed-text' : ''} style={{margin: '0 0 10px 0'}}>{t.title}</h3>
+              <p style={{ margin: '0 0 15px 0', fontSize: '14px' }}>Estado: <strong>{t.status}</strong></p>
+              
+              <button className="btn-small" onClick={() => toggleStatus(t.id)}>
+                {t.status === 'Pendiente' ? '✔ Marcar Completada' : '⏪ Deshacer'}
+              </button>
+              <button className="btn-small btn-delete" onClick={() => deleteTask(t.id)}>🗑 Eliminar</button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
